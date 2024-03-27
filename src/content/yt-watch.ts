@@ -36,6 +36,7 @@ async function openUrl(url: string) {
 
   let pageType: string;
   let shortsPage = false;
+  let rendered = false;
 
   // This fires on both new page (re)load and internal navigation to another page
   // (yt-page-data-fetched and other events also fire but before navigation finishes),
@@ -44,33 +45,7 @@ async function openUrl(url: string) {
     console.debug("[Holodex+] yt-navigate-finish event.detail:", evt.detail);
     pageType = evt.detail.pageType;
     shortsPage = (pageType === "shorts");
-
-    if (pageType === "shorts" || pageType === "watch") {
-      setTimeout(() => {
-        const ytdApp = document.querySelector("ytd-app");
-        if (!ytdApp) throw nodeNotFoundError("ytd-app");
-    
-        let actions, ytdReelVideoRenderer;
-        if (shortsPage) {
-          ytdReelVideoRenderer = ytdApp.querySelector("ytd-reel-video-renderer[is-active]");
-          if (!ytdReelVideoRenderer) throw nodeNotFoundError("ytd-reel-video-renderer");
-          console.debug("[Holodex+] found ytd-reel-video-renderer:", ytdReelVideoRenderer);
-    
-          actions = ytdReelVideoRenderer.querySelector("#actions");
-        } else {
-          actions = ytdApp.querySelector("#actions");
-        }
-        if (!actions) throw nodeNotFoundError("#actions");
-        console.debug("[Holodex+] found #actions:", actions);
-
-        // If #actions already contains #like-button or #top-level-buttons-computed, render immediately.
-        // Note: #top-level-buttons-computed is not unique, so not using document.getElementById.
-        const target = actions.querySelector(shortsPage ? "#like-button" : "#top-level-buttons-computed");
-        if (!target) throw nodeNotFoundError(shortsPage ? "#like-button" : "#top-level-buttons-computed");
-
-        render(target);
-      }, 750);
-    }
+    rendered = false;
   });
 
   async function openHolodex() {
@@ -144,8 +119,39 @@ async function openUrl(url: string) {
     }
 
     ytButton.replaceWith(button);
-    shortsPage ? target.parentNode?.insertBefore(container, target) : target.appendChild(container);
+    shortsPage ? target.insertBefore(container, target.firstChild) : target.appendChild(container);
+    rendered = true;
   }
+
+  document.addEventListener("DOMContentLoaded", async () => {
+    const ytdApp = document.querySelector("ytd-app");
+    if (!ytdApp) throw nodeNotFoundError("ytd-app")
+    
+    new MutationObserver(() => {
+      if (rendered) return;
+      if (pageType === "shorts") {
+        const ytdReelVideoRenderer = ytdApp.querySelector("ytd-reel-video-renderer[is-active]");
+        if (!ytdReelVideoRenderer) return;
+        
+        const actions = ytdReelVideoRenderer.querySelector("#actions");
+        if (!actions) throw nodeNotFoundError("#actions")
+        console.debug("[Holodex+] found #actions:", actions);
+        
+        render(actions);
+      } else if (pageType === "watch") {
+        const actions = ytdApp.querySelector("#actions");
+        if (!actions) throw nodeNotFoundError("#actions");
+        console.debug("[Holodex+] found #actions:", actions);
+        
+        // If #actions already contains #top-level-buttons-computed, render immediately.
+        // Note: #top-level-buttons-computed is not unique, so not using document.getElementById.
+        const target = actions.querySelector("#top-level-buttons-computed");
+        if (!target) throw nodeNotFoundError("#top-level-buttons-computed");
+
+        render(target);
+      }
+    }).observe(ytdApp, { childList: true, subtree: true });
+  });
 
   function nodeNotFoundError(node: string) {
     return new Error("[Holodex+] could not find " + node);
