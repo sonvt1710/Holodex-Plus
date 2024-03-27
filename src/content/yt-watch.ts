@@ -123,10 +123,12 @@ async function openUrl(url: string) {
     rendered = true;
   }
 
-  document.addEventListener("DOMContentLoaded", async () => {
+  document.addEventListener("DOMContentLoaded", () => {
     const ytdApp = document.querySelector("ytd-app");
     if (!ytdApp) throw nodeNotFoundError("ytd-app")
     
+    // Setup mutation observer to (re)render on Watch and Shorts pages,
+    // both for new page (re)load and internal navigation to another page.
     new MutationObserver(() => {
       if (rendered) return;
       if (pageType === "shorts") {
