@@ -1,5 +1,5 @@
 import { ipc, getHolodexUrl, CANONICAL_URL_REGEX } from "src/util";
-import { webRequest, runtime, tabs, windows, browserAction } from "webextension-polyfill";
+import { webRequest, runtime, tabs, windows, browserAction, contextMenus } from "webextension-polyfill";
 import type { Runtime, Tabs } from "webextension-polyfill";
 import { rrc } from "masterchat";
 import { Options } from "src/util";
@@ -20,8 +20,8 @@ webRequest.onHeadersReceived.addListener(
         channelId,
       });
     const redirect = new URL("https://www.youtube.com/live_chat_replay");
-    if(continuation) redirect.searchParams.set("continuation", continuation);
-    if(darkTheme) redirect.searchParams.set("dark_theme", darkTheme);
+    if (continuation) redirect.searchParams.set("continuation", continuation);
+    if (darkTheme) redirect.searchParams.set("dark_theme", darkTheme);
     return {
       redirectUrl: redirect.toString(),
     };
@@ -67,11 +67,32 @@ getBrowserInfo().then((info) => {
 });
 
 // Clicking on Holodex extension icon opens Holodex
-browserAction.onClicked.addListener(async function(tab) {
+browserAction.onClicked.addListener(async function (tab) {
   console.debug("Holodex button clicked for active tab:", tab);
   if (tab.id === undefined || tab.id === tabs.TAB_ID_NONE) return;
   openHolodexUrl(tab);
 });
+
+if (await Options.get("openInHolodexContextMenu")) {
+  contextMenus.create({
+    title: "Open in HoloDex",
+    contexts: ["link"],
+    onclick: ({ linkUrl }, tab) => {
+      console.debug("Holodex context menu item clicked for active tab:", tab, "with url:", linkUrl);
+      if (tab.id === undefined || tab.id === tabs.TAB_ID_NONE) return;
+      openHolodexUrl(tab, linkUrl);
+    },
+    documentUrlPatterns: ["https://*.youtube.com/*"],
+    targetUrlPatterns: [
+      "https://*.youtube.com/",
+      "https://*.youtube.com/feed/*",
+      "https://*.youtube.com/channel*",
+      "https://*.youtube.com/watch?*",
+      "https://*.youtube.com/shorts/*",
+      "https://*.youtube.com/@*",
+    ],
+  });
+}
 
 // Opens Holodex URL for current URL in either a new tab or the same tab, depending on openHolodexInNewTab option.
 //
@@ -86,15 +107,15 @@ browserAction.onClicked.addListener(async function(tab) {
 // (or assigning location.href) does seem to always push a new entry onto the tab's session history.
 // For the openHolodexInNewTab=true case, delegating to the content script is actually convenient,
 // since window.open sets tab position, opener, and tab group (for Chromium-based browsers) properly.
-async function openHolodexUrl(tab: Tabs.Tab) {
+async function openHolodexUrl(tab: Tabs.Tab, link?: string) {
   try {
-    const result = await tabs.sendMessage(tab.id!, { command: "openHolodexUrl" });
+    const result = await tabs.sendMessage(tab.id!, { command: "openHolodexUrl", link });
     if (result) {
       // There's no 100% reliable way to get the tab id of a newly opened tab created from content/page script,
       // so don't bother to try fetching that new tab just for debug logging.
       console.debug(result.newTabOpened ? "new tab created" : "updated tab", "from content script:", result.url);
     } else {
-      console.debug("no new/updated tab for:", tab.url);
+      console.debug("no new/updated tab for:", link || tab.url);
     }
   } catch (e) {
     console.debug("(fallback) due to:", e);
@@ -126,20 +147,23 @@ async function fallbackOpenHolodexUrl(tab: Tabs.Tab) {
       index: tab.index + 1,
       openerTabId: tab.id,
     };
-    if (tab.windowId !== undefined && tab.windowId !== windows.WINDOW_ID_NONE)
-      createProps.windowId = tab.windowId;
+    if (tab.windowId !== undefined && tab.windowId !== windows.WINDOW_ID_NONE) createProps.windowId = tab.windowId;
     const newTab = await tabs.create(createProps);
     console.debug("(fallback) new tab created:", newTab);
     const tabsGroup = (tabs as any).group;
     if (tabsGroup && newTab.id !== undefined && newTab.id !== tabs.TAB_ID_NONE) {
       const groupId = (tab as any).groupId;
-      if (groupId !== undefined && groupId !== -1) { // chrome.tabGroups.TAB_GROUP_ID_NONE is -1
-        tabsGroup({
-          groupId,
-          tabIds: newTab.id,
-        }, (groupId: number) => {
-          console.debug("(fallback) tab", newTab.id, "moved to group", groupId);
-        });
+      if (groupId !== undefined && groupId !== -1) {
+        // chrome.tabGroups.TAB_GROUP_ID_NONE is -1
+        tabsGroup(
+          {
+            groupId,
+            tabIds: newTab.id,
+          },
+          (groupId: number) => {
+            console.debug("(fallback) tab", newTab.id, "moved to group", groupId);
+          }
+        );
       }
     }
   } else {

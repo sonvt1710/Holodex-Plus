@@ -129,11 +129,11 @@ async function openUrl(url: string) {
   runtime.onMessage.addListener((message) => {
     if (message?.command !== "openHolodexUrl") return;
     console.debug("[Holodex+] handling openHolodexUrl message");
-    return Promise.resolve(openHolodexUrl());
+    return Promise.resolve(openHolodexUrl(message?.link));
   });
 
-  async function openHolodexUrl() {
-    const url = await getHolodexUrl(window.location.href, findCanonicalUrl)
+  async function openHolodexUrl(link = window.location.href) {
+    const url = await getHolodexUrl(link, findCanonicalUrl);
     if (!url) return null;
     const newTabOpened = await openUrl(url);
     console.debug("[Holodex+]", newTabOpened ? "new tab created:" : "updated tab:", url);

@@ -29,7 +29,7 @@ const web_accessible_resources = [
 
 //const hosts = ["*://*.youtube.com/*", "*://*.holodex.net/*", "*://*.twitch.tv/*", "*://*.twitcasting.tv/*", "*://embed.nicovideo.jp/*","*://player.bilibili.com/*"];
 const hosts = ["*://*.youtube.com/*", "*://*.holodex.net/*"];
-const permissions = ["tabs", "storage", "webRequest", "webRequestBlocking", ...hosts];
+const permissions = ["tabs", "storage", "webRequest", "webRequestBlocking", "contextMenus", ...hosts];
 const name = "Holodex Plus";
 
 export default ({ icons }) =>

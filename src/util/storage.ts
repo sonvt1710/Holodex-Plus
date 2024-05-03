@@ -6,6 +6,7 @@ const schema = {
   remoteYoutubeLikeButton: true,
   holodexButtonInYoutube: false,
   openHolodexInNewTab: true,
+  openInHolodexContextMenu: false,
 };
 type Schema = typeof schema;
 const descriptions: Partial<Record<keyof Schema, string>> = {};
