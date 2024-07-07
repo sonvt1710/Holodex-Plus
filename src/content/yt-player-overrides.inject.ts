@@ -173,12 +173,7 @@ manager.handleAsk("fetchAudio", async (body): Promise<{ state: "ok" | "failed"; 
 });
 
 async function downloadAndReport(smallestFormat: Format) {
-  const response = await fetch(smallestFormat.url, {
-    method: "GET",
-    headers: {
-      "Content-Type": smallestFormat.mimeType,
-    },
-  });
+  const response = await fetch(smallestFormat.url);
   const totalBytes = Number(response.headers.get("Content-Length"));
   let downloadedBytes = 0;
 
