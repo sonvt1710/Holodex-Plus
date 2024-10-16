@@ -19,41 +19,45 @@ const content_scripts = [
 ];
 
 const web_accessible_resources = [
-  "content/yt-watch.inject.js",
-  "content/yt-player-overrides.inject.js",
-  "content/yt-chat-overrides.inject.js",
-  "content/yt-chat-tlsync.inject.js",
-  "content/twitch-chat-tlsync.inject.js",
-  "content/holodex-flag.inject.js",
+  {
+    "resources": [
+      "content/yt-watch.inject.js",
+      "content/yt-player-overrides.inject.js",
+      "content/yt-chat-overrides.inject.js",
+      "content/yt-chat-tlsync.inject.js",
+      "content/twitch-chat-tlsync.inject.js",
+      "content/holodex-flag.inject.js"
+    ],
+    "matches": []
+  }
 ];
 
-//const hosts = ["*://*.youtube.com/*", "*://*.holodex.net/*", "*://*.twitch.tv/*", "*://*.twitcasting.tv/*", "*://embed.nicovideo.jp/*","*://player.bilibili.com/*"];
-const hosts = ["*://*.youtube.com/*", "*://*.holodex.net/*"];
-const permissions = ["tabs", "storage", "webRequest", "webRequestBlocking", "contextMenus", ...hosts];
+//const host_permissions = ["*://*.youtube.com/*", "*://*.holodex.net/*", "*://*.twitch.tv/*", "*://*.twitcasting.tv/*", "*://embed.nicovideo.jp/*","*://player.bilibili.com/*"];
+const host_permissions = ["*://*.youtube.com/*", "*://*.holodex.net/*"];
+const permissions = ["tabs", "storage", "webRequest", "webRequestBlocking", "contextMenus"];
 const name = "Holodex Plus";
 
 export default ({ icons }) =>
   JSON.stringify(
     {
-      manifest_version: 2,
+      manifest_version: 3,
       name,
       version: pkg.version,
       description: pkg.description,
       icons,
       background: {
-        page: "background/index.html",
-        persistent: true,
+        page: "background/index.html"
       },
       content_scripts,
       web_accessible_resources,
       permissions,
-      browser_action: {
+      host_permissions,
+      action: {
         default_icon: { ...icons },
         // default_popup: "popup/index.html",
         default_title: "Open in Holodex",
       },
       options_ui: {
-        browser_style: false,
         page: "options/index.html",
         open_in_tab: false,
       },

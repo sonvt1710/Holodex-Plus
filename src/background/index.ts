@@ -1,5 +1,5 @@
 import { ipc, getHolodexUrl, CANONICAL_URL_REGEX } from "src/util";
-import { webRequest, runtime, tabs, windows, browserAction, contextMenus } from "webextension-polyfill";
+import { webRequest, runtime, tabs, windows, action, contextMenus } from "webextension-polyfill";
 import type { Runtime, Tabs } from "webextension-polyfill";
 import { rrc } from "masterchat";
 import { Options } from "src/util";
@@ -67,7 +67,7 @@ getBrowserInfo().then((info) => {
 });
 
 // Clicking on Holodex extension icon opens Holodex
-browserAction.onClicked.addListener(async function (tab) {
+action.onClicked.addListener(async function (tab) {
   console.debug("Holodex button clicked for active tab:", tab);
   if (tab.id === undefined || tab.id === tabs.TAB_ID_NONE) return;
   openHolodexUrl(tab);
