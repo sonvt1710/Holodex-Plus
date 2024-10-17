@@ -39,13 +39,9 @@ const options = [
         flattenOutput: false,
         input: ["background/index.html", "options/index.html", "popup/index.html"],
       }),
-      bundleExtension(
-        { iconDir: "src/icons" },
-      ),
+      bundleExtension({ iconDir: "src/icons" }),
       copy({
-        targets: [
-          { src: "src/content/style/*.css", dest: "build/content/style" }
-        ]
+        targets: [{ src: "src/content/style/*.css", dest: "build/content/style" }],
       }),
     ],
   },
@@ -53,3 +49,4 @@ const options = [
 ];
 
 export default options;
+

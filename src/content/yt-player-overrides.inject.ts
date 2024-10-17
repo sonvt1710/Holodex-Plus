@@ -1,3 +1,7 @@
+import { Innertube, UniversalCache } from "youtubei.js/web.bundle.min";
+import { ProtoframeDescriptor, ProtoframePubsub } from "protoframe";
+import type { Format } from "youtubei.js/dist/src/parser/misc";
+
 console.log("[Holodex+]", "Setting YT player overrides");
 
 // List of flags and desired values
@@ -58,176 +62,98 @@ if (!cfg) {
   }
 }
 
-import { ProtoframeDescriptor, ProtoframePubsub } from "protoframe";
-
-interface Format {
-  itag: number;
-  url: string;
-  mimeType: string;
-  bitrate: number;
-  width: number;
-  height: number;
-  lastModified: string;
-  contentLength: string;
-  quality: string;
-  qualityLabel: string;
-  projectionType: string;
-  averageBitrate: number;
-  audioQuality: string;
-  approxDurationMs: string;
-}
+interface YTFFormat extends Format {}
 
 export const ytAudioDLProtocol: ProtoframeDescriptor<{
   fetchAudio: {
     body: { videoId?: string };
-    response: { state: "ok" | "failed"; msg: string; format?: Format };
+    response: { state: "ok" | "failed"; msg: string; format?: YTFFormat };
   };
   progress: {
     body: { percentage: number; total: number };
   };
   fetchAudioComplete: {
-    body: { audio: Uint8Array; format: Format };
+    body: { audio: Uint8Array; format: YTFFormat };
   };
 }> = { type: "audio_dl" };
 
 const manager = ProtoframePubsub.iframe(ytAudioDLProtocol);
 
-const DEFAULT_KEY = "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8";
-const DEFAULT_FAKE_CONTEXT = (id: string) => ({
-  client: {
-    hl: "en",
-    clientName: "WEB",
-    clientVersion: "2.20210721.00.00",
-    clientFormFactor: "UNKNOWN_FORM_FACTOR",
-    clientScreen: "WATCH",
-    mainAppWebInfo: {
-      graftUrl: "/watch?v=" + id,
-    },
-  },
-  user: {
-    lockedSafetyMode: false,
-  },
-  request: {
-    useSsl: true,
-    internalExperimentFlags: [],
-    consistencyTokenJars: [],
-  },
-});
-
-const YT_PLAYER_URL = "https://www.youtube.com/youtubei/v1/player?key=";
-
-manager.handleAsk("fetchAudio", async (body): Promise<{ state: "ok" | "failed"; msg: string; format?: Format }> => {
+manager.handleAsk("fetchAudio", async (body): Promise<{ state: "ok" | "failed"; msg: string; format?: YTFFormat }> => {
   if (!body.videoId) {
     console.error("[Holodex+] No video ID");
     return Promise.resolve({ state: "failed", msg: "No Video ID provided", format: undefined });
   }
   try {
-    // const ytLikeData = await getYtLikeData();
-    // const { apiKey = DEFAULT_KEY } = ytLikeData || {};
-
-    let data = {
-      context: DEFAULT_FAKE_CONTEXT(body.videoId),
-      videoId: body.videoId,
-      playbackContext: {
-        contentPlaybackContext: {
-          vis: 0,
-          splay: false,
-          autoCaptionsDefaultOn: false,
-          autonavState: "STATE_NONE",
-          html5Preference: "HTML5_PREF_WANTS",
-          lactMilliseconds: "-1",
-        },
+    const innertube = await Innertube.create({
+      cache: new UniversalCache(false),
+      generate_session_locally: false,
+      fetch(i, e) {
+        return window.fetch(i, e);
       },
-      racyCheckOk: false,
-      contentCheckOk: false,
-    };
+    });
 
-    const url = YT_PLAYER_URL + DEFAULT_KEY;
+    const info = await innertube.getInfo(body.videoId, "WEB");
+    console.log(info);
+    const format = info.chooseFormat({
+      type: "audio", // audio, video or video+audio
+      quality: "bestefficiency", // best, bestefficiency, 144p, 240p, 480p, 720p and so on.
+      format: "opus", // media container format
+    });
+    const totalBytes = format.content_length || -1;
 
-    let options = {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
-    };
+    return await new Promise((resolve, reject) => {
+      info
+        .download({
+          client: "WEB",
+          type: "audio", // audio, video or video+audio
+          quality: "bestefficiency", // best, bestefficiency, 144p, 240p, 480p, 720p and so on.
+          format: "opus", // media container format
+        })
+        .then(
+          async (rstream) => {
+            resolve({ state: "ok", msg: "in progress...", format: format });
+            const chunks: Uint8Array[] = [];
+            let downloadedBytes = 0;
 
-    const res = await fetch(url, options);
-    const mediaData = await res.json();
-    console.log(mediaData);
-    const smallestFormat = getSmallestUriWithAudio(mediaData);
+            const reader = rstream.getReader();
+            while (true) {
+              const x = await reader.read();
 
-    if (!smallestFormat)
-      return {
-        state: "failed",
-        msg: "No suitable format of Audio-Onlyfound. Please wait for Youtube to finish processing, or maybe you are unlucky.",
-        format: undefined,
-      };
+              if (x.done) {
+                break;
+              }
 
-    setTimeout(() => downloadAndReport(smallestFormat), 100);
+              chunks.push(x.value);
+              downloadedBytes += x.value.length;
+              if (totalBytes < 0) {
+                manager.tell("progress", { percentage: -1, total: downloadedBytes });
+              } else {
+                const progress = Math.round((downloadedBytes / totalBytes) * 100);
+                manager.tell("progress", { percentage: progress * 0.95, total: totalBytes });
+              }
+            }
+            const result = new Uint8Array(downloadedBytes);
+            let offset = 0;
 
-    return { state: "ok", msg: "in progress...", format: smallestFormat };
+            for (const chunk of chunks) {
+              result.set(chunk, offset);
+              offset += chunk.length;
+            }
+            manager.tell("progress", { percentage: 100, total: totalBytes });
+            manager.tell("fetchAudioComplete", { audio: result, format: format });
+          },
+          (reason) => {
+            resolve({ state: "failed", msg: "Error occured: " + new String(reason || "???"), format: undefined });
+          }
+        );
+    });
   } catch (e) {
+    console.error(e);
+    console.error("Failed to download from Youtube...?");
     return { state: "failed", msg: "Error occured: " + new String(e || "???"), format: undefined };
   }
 });
-
-async function downloadAndReport(smallestFormat: Format) {
-  const response = await fetch(smallestFormat.url);
-  const totalBytes = Number(response.headers.get("Content-Length"));
-  let downloadedBytes = 0;
-
-  const reader = response.body!.getReader();
-  const chunks: Uint8Array[] = [];
-
-  while (true) {
-    const x = await reader.read();
-
-    if (x.done) {
-      break;
-    }
-
-    chunks.push(x.value);
-    downloadedBytes += x.value.length;
-
-    const progress = Math.round((downloadedBytes / totalBytes) * 100);
-    manager.tell("progress", { percentage: progress * 0.95, total: totalBytes });
-  }
-
-  const result = new Uint8Array(downloadedBytes);
-  let offset = 0;
-
-  for (const chunk of chunks) {
-    result.set(chunk, offset);
-    offset += chunk.length;
-  }
-  manager.tell("progress", { percentage: 100, total: totalBytes });
-  manager.tell("fetchAudioComplete", { audio: result, format: smallestFormat });
-}
-
-function getSmallestUriWithAudio(mediaData: any): Format | null {
-  // Filter out formats that have audio codecs
-  const formatsWithAudio: Format[] = [
-    ...mediaData.streamingData.adaptiveFormats,
-    ...mediaData.streamingData.formats,
-  ].filter((fmt: Format) => fmt.mimeType.includes("mp4a") || fmt.mimeType.includes("audio"));
-
-  console.log(formatsWithAudio);
-
-  // If there's no format with audio codec
-  if (!formatsWithAudio.length) {
-    return null;
-  }
-
-  // Sort the formats by contentLength
-  const smallestFormat: Format = formatsWithAudio.sort(
-    (fmtA: Format, fmtB: Format) => Number(fmtA.contentLength) - Number(fmtB.contentLength)
-  )[0];
-
-  console.log(smallestFormat);
-
-  return smallestFormat;
-}
 
 export {};
 
