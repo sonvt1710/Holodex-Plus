@@ -13,7 +13,7 @@
     "resolveJsonModule": true,
     "useDefineForClassFields": true,
     "allowSyntheticDefaultImports": true,
-    "importsNotUsedAsValues": "error",
+    "verbatimModuleSyntax": true,
     "isolatedModules": true
   }
 }

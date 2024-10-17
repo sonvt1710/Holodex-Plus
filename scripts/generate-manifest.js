@@ -28,40 +28,47 @@ const web_accessible_resources = [
       "content/twitch-chat-tlsync.inject.js",
       "content/holodex-flag.inject.js"
     ],
-    "matches": []
+    "matches": ["*://*.youtube.com/*", "*://*.holodex.net/*"]
   }
 ];
 
 //const host_permissions = ["*://*.youtube.com/*", "*://*.holodex.net/*", "*://*.twitch.tv/*", "*://*.twitcasting.tv/*", "*://embed.nicovideo.jp/*","*://player.bilibili.com/*"];
 const host_permissions = ["*://*.youtube.com/*", "*://*.holodex.net/*"];
+/** @type {chrome.runtime.ManifestPermissions[]} */
 const permissions = ["tabs", "storage", "webRequest", "webRequestBlocking", "contextMenus"];
 const name = "Holodex Plus";
 
-export default ({ icons }) =>
-  JSON.stringify(
-    {
-      manifest_version: 3,
-      name,
-      version: pkg.version,
-      description: pkg.description,
-      icons,
-      background: {
-        page: "background/index.html"
-      },
-      content_scripts,
-      web_accessible_resources,
-      permissions,
-      host_permissions,
-      action: {
-        default_icon: { ...icons },
-        // default_popup: "popup/index.html",
-        default_title: "Open in Holodex",
-      },
-      options_ui: {
-        page: "options/index.html",
-        open_in_tab: false,
-      },
+
+
+export default ({ icons }) => {
+  /** @type {chrome.runtime.ManifestV3} */
+  const manifest = {
+    manifest_version: 3,
+    name,
+    version: pkg.version,
+    description: pkg.description,
+    icons,
+    background: {
+      service_worker: "background/index.ts",
     },
-    null,
-    2
-  );
+    permissions,
+    content_scripts,
+    web_accessible_resources,
+    host_permissions,
+    action: {
+      default_icon: { ...icons },
+      // default_popup: "popup/index.html",
+      default_title: "Open in Holodex",
+    },
+    options_ui: {
+      page: "options/index.html",
+      open_in_tab: false,
+    },
+  };
+
+  JSON.stringify(manifest, null, 2);
+}
+
+
+
+
