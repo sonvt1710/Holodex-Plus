@@ -17,5 +17,13 @@
   "editor.detectIndentation": false,
   "editor.tabSize": 2,
   "editor.insertSpaces": true,
-  "cSpell.words": ["onesie", "supex", "unstarted", "webfe", "ytcfg", "ytidb"]
+  "cSpell.words": [
+    "onesie",
+    "supex",
+    "unstarted",
+    "webfe",
+    "ytcfg",
+    "ytidb"
+  ],
+  "typescript.tsdk": "node_modules\\typescript\\lib"
 }

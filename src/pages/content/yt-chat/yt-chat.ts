@@ -1,6 +1,7 @@
 import { inject, validOrigin } from "@src/utils";
+import injectPath from "./yt-chat-inject?script&module";
 
-inject("content/yt-chat-overrides.inject.js");
+inject(injectPath);
 
 // chrome.scripting.executeScript({
 //   target: { tabId: currentTabId },
