@@ -14,7 +14,7 @@ import type { ProtocolWithReturn } from "webext-bridge";
 
 declare module "webext-bridge" {
   export interface ProtocolMap {
-    foo: { title: string };
+    requestScriptInjection: { scriptType: "YT_CHAT_INJECT" | "YT_PLAYER_INJECT" | "YT_WATCH_INJECT" | "TLSYNC_INJECT" };
     // to specify the return type of the message,
     // use the `ProtocolWithReturn` type wrapper
     bar: ProtocolWithReturn<CustomDataType, CustomReturnType>;

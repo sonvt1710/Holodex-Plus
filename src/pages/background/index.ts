@@ -113,11 +113,3 @@ async function openHolodexUrl(url: string) {
   }
 }
 
-async function getOption(optionName: any) {
-  // Replace with your preferred options storage retrieval logic
-  return new Promise((resolve) => {
-    chrome.storage.sync.get([optionName], (result) =>
-      resolve(result[optionName])
-    );
-  });
-}
