@@ -1,53 +1,139 @@
-# <img src="src/icons/holodex-plus-icon.png" width="48"> Holodex+
+<div align="center">
+<img src="public/icon-128.png" alt="logo"/>
+<h1> Minimalist Chrome/Firefox Extension Boilerplate with<br/>React + Vite + TypeScript + TailwindCSS</h1>
 
-Holodex Companion Extension.
+<h5>
+This template repository is a side product of my Chrome Extension <a target="_blank" rel="noopener noreferrer" href="https://chrome.google.com/webstore/detail/supatabs/icbcnjlaegndjabnjbaeihnnmidbfigk">Supatabs</a>.
+<br />
+If you tend to have tons of tabs open, or are a OneTab user, make sure to check it out <a target="_blank" rel="noopener noreferrer" href="https://chrome.google.com/webstore/detail/supatabs/icbcnjlaegndjabnjbaeihnnmidbfigk">here</a>!
+</h5>
 
-### [Changelog](https://github.com/HolodexNet/Holodex-Plus/blob/dev/CHANGELOG.md)
+<h5>Supatabs is an example and showcase of what you can develop with this template. (anything you want, really 🚀)</h5>
 
-### Local development (Chrome)
+</div>
 
-```bash
-yarn
-yarn dev # watch ts files
+## Table of Contents
 
-#in another pane
-yarn dev:chrome # launch chrome
-```
+- [Intro](#intro)
+- [Features](#features)
+- [Usage](#usage)
+  - [Setup](#setup) 
+  - [Customization](#customization)
+  - [Publish](#publish)
+- [Tech Docs](#tech)
+- [Credit](#credit)
+- [Contributing](#contributing)
 
-Hot refresh doesn't exist, but the files are watched and re-built when changed. To see your changes
 
-- in `src/popup`, close and re-open the popup
-- in `src/options`, reload the options page
-- in `src/content`, reload the extension in [`chrome://extensions`](chrome://extensions), then reload the page the content script is running in
-- in `src/background`, reload the extension in [`chrome://extensions`](chrome://extensions)
+## Intro <a name="intro"></a>
+This boilerplate is meant to be a minimal quick start for creating chrome/firefox extensions using React, Typescript and Tailwind CSS.
 
-To open devtools for:
+It includes all possible pages such as **new tab**, **dev panel**, **pop up**, etc., as well as corresponding manifest settings by default.
+You will likely have to customize/delete some of the pages (see docs below).
 
-- `src/popup`, right-click the extension icon next to the address bar, and click `Inspect popup`
-- `src/background`, go to [`chrome://extensions`](chrome://extensions), then go to the extension's `Details`, then under `Inspect views`, click `background page`
-- `src/options`, go to [`chrome://extensions`](chrome://extensions), then go to the extension's `Details`, then click `Extension options`, which will open a new tab where you can open devtools normally
-- `src/content`, open devtools on any page where the content script is running
+You can build dist files for both Chrome and Firefox with manifest v3.
 
-### Local development (Firefox)
+If you are looking for a React focused way to access the local storage, I also implemented a chrome local/sync storage hook. The hook works
+well with this template. [Check it out here](https://gist.github.com/JohnBra/c81451ea7bc9e77f8021beb4f198ab96).
 
-```bash
-yarn
-yarn dev # watch ts files
+## Features <a name="features"></a>
+- [React 18](https://reactjs.org/)
+- [TypeScript](https://www.typescriptlang.org/)
+- [Tailwind CSS](https://tailwindcss.com/)
+- [ESLint](https://eslint.org/)
+- [Chrome Extension Manifest Version 3](https://developer.chrome.com/docs/extensions/mv3/intro/)
+- [Github Action](https://github.com/JohnBra/vite-web-extension/actions/workflows/ci.yml) to build and zip your extension (manual trigger)
 
-# in another pane
-yarn dev:firefox # launch firefox
-```
+## Usage <a name="usage"></a>
 
-Reloading works the same way as in Chrome, but devtools works a bit differently from Chrome. `popup`, `background`, and `options` all output their content into the same inspection tool available through [about:debugging#/runtime/this-firefox](about:debugging#/runtime/this-firefox) -> `Inspect`.
+### Setup <a name="setup"></a>
 
-Just like in Chrome, `options` can also be inspected normally by opening devtools on the options page, and content scripts output their logs into the opened page's devtools console.
+#### Chrome
 
-You can inspect the sources of `popup` by opening the `Debugger` tab in the inspection tool, and selecting the source file on the left side.
+1. Clone this repository or click "Use this template"
+2. Change `name` and `description` in `manifest.json`
+3. Run `yarn` or `npm i` (check your node version >= 16)
+4. Run `yarn dev` or `npm run dev`
+5. Load Extension in Chrome
+   1. Open - Chrome browser
+   2. Access - [chrome://extensions](chrome://extensions)
+   3. Tick - Developer mode
+   4. Find - Load unpacked extension
+   5. Select - `dist` folder in this project (after dev or build)
+6. To create an optimized production build, run `yarn build` or `npm run build`.
 
-### Publishing:
+#### Firefox
+By default this template generates a dist for Chrome, but you can also generate a dist for Firefox
+by simply changing a couple of things in the config files.
 
-```bash
-yarn dist
-```
+This is the complete Firefox setup from a fresh project:
 
-To build the published extension. The zip file will be put into the `dist/` folder.
+1. Clone this repository or click "Use this template"
+2. Change `name` and `description` in `manifest.json`
+3. Change the `browser` target in `vite.config.ts` to `'firefox'`
+4. Remove `service_worker` and `type` prop in `background` object of `manifest.json` and replace with `"scripts": [ "service-worker-loader.js" ]`
+5. Run `yarn` or `npm i` (check your node version >= 16)
+6. Run `yarn dev` or `npm run dev` (_Firefox does not support hot reloading_)
+7. Load Extension in Firefox
+   1. Open - Firefox browser
+   2. Access - [about:debugging#/runtime/this-firefox](about:debugging#/runtime/this-firefox)
+   4. Click - Load temporary Add-on
+   5. Select - any file in `dist` folder (i.e. `manifest.json`) in this project (after dev or build)
+8. To create an optimized production build, run `yarn build` or `npm run build`.
+
+### Customization <a name="customization"></a>
+#### Adding / removing pages
+The template includes **all** of the extension pages (i.e. New Tab, Dev Panel, Popup, etc.). You will likely have to customize it to fit your needs.
+
+E.g. you don't want the newtab page to activate whenever you open a new tab:
+1. remove the directory `newtab` and its contents in `src/pages`
+2. remove `chrome_url_overrides: { newtab: 'src/pages/newtab/index.html' },` in `manifest.json`
+
+If you need to declare extra HTML pages beyond those the manifest accommodates, place them in the Vite config under build.rollupOptions.input.
+
+CSS files in the `src/pages/*` directories are not necessary. They are left in there in case you want 
+to use it in combination with Tailwind CSS. **Feel free to delete them**.
+
+Tailwind can be configured as usual in the `tailwind.config.cjs` file. See doc link below.
+
+#### Internationalization (i18n)
+To enable internationalization set the `localize` flag in the `vite.config.ts` to `true`.
+
+The template includes a directory `locales` with the basic setup for english i18n. Follow the
+instructions in the [official docs](https://developer.chrome.com/docs/extensions/reference/api/i18n#description) 
+to add other translations and retrieve them in the extension.
+
+If you don't need i18n you can ignore the `locales` directory for, as it won't
+be copied into the build folder unless the `localize` flag is set to `true`.
+
+
+### Publish your extension <a name="publish"></a>
+To upload an extension to the Chrome store you have to pack (zip) it and then upload it to your item 
+in the Chrome Web Store.
+
+This repo includes a Github Action Workflow to create a 
+[optimized prod build and create the zip file](https://github.com/JohnBra/vite-web-extension/actions/workflows/ci.yml).
+
+To run the workflow do the following:
+1. Go to the **"Actions"** tab in your forked repository from this template
+2. In the left sidebar click on **"Build and Zip Extension"**
+3. Click on **"Run Workflow"** and select the main branch, then **"Run Workflow"**
+4. Refresh the page and click the most recent run
+5. In the summary page **"Artifacts"** section click on the generated **"vite-web-extension"**
+6. Upload this file to the Chrome Web Store as described [here](https://developer.chrome.com/docs/webstore/publish/)
+
+# Tech Docs <a name="tech"></a>
+- [Vite](https://vitejs.dev/)
+- [Vite Plugin](https://vitejs.dev/guide/api-plugin.html)
+- [Chrome Extension with manifest 3](https://developer.chrome.com/docs/extensions/mv3/)
+- [Chrome Extension i18n](https://developer.chrome.com/docs/extensions/reference/api/i18n#description)
+- [Rollup](https://rollupjs.org/guide/en/)
+- [@crxjs/vite-plugin](https://crxjs.dev/vite-plugin)
+- [Tailwind CSS](https://tailwindcss.com/docs/configuration)
+
+# Credit <a name="credit"></a>
+Heavily inspired by [Jonghakseo's vite chrome extension boilerplate](https://github.com/Jonghakseo/chrome-extension-boilerplate-react-vite). 
+It uses SASS instead of TailwindCSS and is ~~slightly~~ _a lot_ less minimalist in case you want to check it out.
+
+# Contributing <a name="contributing"></a>
+Feel free to open PRs or raise issues!

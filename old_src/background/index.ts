@@ -6,6 +6,7 @@ import { Options } from "src/util";
 
 ipc.setupProxy();
 // Allows all of youtube to be iframed (mainly used for Archive Chat)
+// Unnecessary because we'll be using rrc function directly within Holodex.
 webRequest.onHeadersReceived.addListener(
   (details) => {
     const q = new URL(details.url);

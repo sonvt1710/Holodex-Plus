@@ -1,19 +1,28 @@
 {
   "compilerOptions": {
     "target": "esnext",
+    "types": ["vite/client", "node", "chrome-types"],
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": false,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "noFallthroughCasesInSwitch": true,
     "module": "esnext",
     "moduleResolution": "node",
-    "baseUrl": "./",
-
-    /* Additional Options */
-    "strict": true,
-    "skipLibCheck": true,
-    "types": ["webextension-polyfill"],
-    "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "useDefineForClassFields": true,
-    "allowSyntheticDefaultImports": true,
-    "verbatimModuleSyntax": true,
-    "isolatedModules": true
-  }
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "baseUrl": ".",
+    "paths": {
+      "@src/*": ["src/*"],
+      "@assets/*": ["src/assets/*"],
+      "@locales/*": ["src/locales/*"],
+      "@pages/*": ["src/pages/*"]
+    }
+  },
+  "include": ["src",
+    "utils", "vite.config.ts"],
 }
