@@ -31,11 +31,11 @@ const manifest = ({
   ],
   host_permissions: ["*://*.youtube.com/*", "*://*.holodex.net/*"],
   content_scripts: [
-    {
-      matches: ["http://*/*", "https://*/*", "<all_urls>"],
-      js: ["src/pages/content/index.tsx"],
-      css: ["contentStyle.css"],
-    },
+    // {
+    //   matches: ["http://*/*", "https://*/*", "<all_urls>"],
+    //   js: ["src/pages/content/index.tsx"],
+    //   css: ["contentStyle.css"],
+    // },
     {
       matches: ["*://*.youtube.com/live_chat*"], js: ["src/pages/content/yt-chat/yt-chat.ts"], all_frames: true, run_at: "document_end",
     }
@@ -52,4 +52,4 @@ const manifest = ({
   // },
 }) as const satisfies ManifestV3Export;
 
-export default manifest;
+export default manifest; 
